@@ -4,7 +4,25 @@
       "Read(//c/Program Files/Docker/**)",
       "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\uninstall-docker.ps1`\"\")",
       "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\install-docker.ps1`\"\")",
-      "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\install-wsl-msi.ps1`\"\")"
+      "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\install-wsl-msi.ps1`\"\")",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" http://localhost:5000/api/version)",
+      "Bash(curl -s http://localhost:5000/api/version)",
+      "Bash(curl -s http://localhost:5000/api/stats)",
+      "Bash(python -m json.tool)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('detector:', d['detectors']\\); print\\('camera:', d['cameras']\\)\")",
+      "Bash(curl -s http://localhost:5000/api/go2rtc/streams/front_door)",
+      "Bash(curl -s \"http://localhost:5000/api/go2rtc/api/streams\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); c=d['cameras']['front_door']; print\\(f'camera_fps={c[\\\\\"camera_fps\\\\\"]} process_fps={c[\\\\\"process_fps\\\\\"]} detection_fps={c[\\\\\"detection_fps\\\\\"]}'\\)\")",
+      "Bash(curl -s -o \"c:/Users/THANG TRUONG/Desktop/dev_tool/camera/test_frame.jpg\" -w \"HTTP %{http_code} size %{size_download} time %{time_total}\\\\n\" \"http://localhost:5000/api/front_door/latest.jpg\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('detector:', d['detectors']\\); print\\('camera:', d['cameras']['front_door']\\)\")",
+      "Bash(cp docker-compose.yml docker-compose.yml.gpu-test)",
+      "Bash(cp config/config.yml config/config.yml.gpu-test)",
+      "Bash(cp docker-compose.cpu.yml.bak docker-compose.yml)",
+      "Bash(cp config/config.cpu.yml.bak config/config.yml)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('cam:', d['cameras']\\); print\\('det:', d['detectors']\\)\")",
+      "Bash(curl -s -o \"c:/Users/THANG TRUONG/Desktop/dev_tool/camera/test_cpu_frame.jpg\" -w \"HTTP %{http_code} size %{size_download}\\\\n\" \"http://localhost:5000/api/front_door/latest.jpg\")"
     ]
   }
 }
