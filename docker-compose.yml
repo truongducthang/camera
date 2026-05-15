@@ -1,0 +1,64 @@
+services:
+  # MQTT broker — kênh truyền event giữa Frigate và alerter
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  # Frigate — NVR + AI detection
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    privileged: true            # Cần cho Coral USB; bỏ nếu chạy CPU detect
+    shm_size: 256mb             # Tăng nếu nhiều cam độ phân giải cao
+    # devices:
+    #   - /dev/bus/usb:/dev/bus/usb     # Bỏ comment nếu có Google Coral USB
+    #   - /dev/dri/renderD128           # Bỏ comment nếu dùng Intel QSV/VAAPI
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config/config.yml:/config/config.yml:ro
+      - ./storage:/media/frigate
+      - type: tmpfs             # Cache giảm wear cho SD card
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "5000:5000"             # Web UI
+      - "8554:8554"             # RTSP restream
+      - "8555:8555/tcp"         # WebRTC
+      - "8555:8555/udp"
+    environment:
+      FRIGATE_RTSP_PASSWORD: "${FRIGATE_RTSP_PASSWORD}"
+      FRIGATE_CAM01_URL: "${FRIGATE_CAM01_URL}"
+
+  # Alerter — subscribe MQTT, gửi Telegram khi có người
+  alerter:
+    build: ./alerter
+    container_name: alerter
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - frigate
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: frigate/events
+      FRIGATE_BASE_URL: http://frigate:5000
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID}"
+      ALERT_LABELS: "person"           # Chỉ cảnh báo nhãn này (CSV)
+      ALERT_COOLDOWN_SEC: "60"         # Tránh spam: 60s/cam mới gửi tiếp
+      ALERT_MIN_SCORE: "0.7"           # Score tối thiểu để gửi
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:

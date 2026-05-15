@@ -1,0 +1,16 @@
+{
+  "name": "frigate-alerter",
+  "version": "1.0.0",
+  "description": "Subscribe Frigate MQTT events và gửi cảnh báo Telegram",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

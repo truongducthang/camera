@@ -1,0 +1,138 @@
+mqtt:
+  enabled: true
+  host: mosquitto
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
+
+# ============================================================================
+# DETECTOR — AI engine để nhận diện object
+# ============================================================================
+detectors:
+  cpu1:
+    type: cpu
+    num_threads: 3
+  # edgetpu:                            # Bỏ comment nếu có Google Coral USB
+  #   type: edgetpu
+  #   device: usb
+
+# ============================================================================
+# FFMPEG — tham số chung cho mọi camera
+# ============================================================================
+ffmpeg:
+  # hwaccel_args: preset-vaapi          # Chỉ bật khi chạy trên Linux có Intel iGPU. Bỏ qua trên Windows/Docker Desktop.
+  output_args:
+    record: preset-record-generic-audio-copy
+
+# ============================================================================
+# DETECT — cấu hình mặc định cho detect engine
+# ============================================================================
+detect:
+  enabled: true
+  fps: 5
+
+objects:
+  track:
+    - person
+    - car
+    - dog
+    - cat
+  filters:
+    person:
+      min_score: 0.6
+      threshold: 0.7
+
+# ============================================================================
+# RECORD — chính sách lưu video
+# ============================================================================
+record:
+  enabled: true
+  alerts:
+    retain:
+      days: 14
+      mode: motion
+  detections:
+    retain:
+      days: 7
+      mode: motion
+
+snapshots:
+  enabled: true
+  timestamp: true
+  bounding_box: true
+  retain:
+    default: 14
+
+# ============================================================================
+# go2rtc — RESTREAM SERVER giúp xem live MƯỢT qua WebRTC/MSE thay vì JSMPEG
+# ============================================================================
+# Luồng dữ liệu:
+#   Cam ──RTSP──▶ go2rtc (port 8554) ──┬──▶ Frigate ffmpeg (record + detect)
+#                                       └──▶ Browser (WebRTC/MSE, low-latency)
+#
+# Lợi ích:
+#   - Cam chỉ phải phục vụ 1 connection (go2rtc), không bị quá tải.
+#   - Browser xem qua WebRTC = latency 200-500ms (so với 3-5s của JSMPEG mặc định).
+#   - Mọi consumer (Frigate, browser, HA, VLC...) đều xem chung 1 stream.
+go2rtc:
+  streams:
+    front_door:
+      - "{FRIGATE_CAM01_URL}"           # Sub-stream H.264 — cùng URL trong .env
+
+  # WebRTC cần ICE candidates để browser biết kết nối tới đâu.
+  # 127.0.0.1:8555 dùng khi mở Frigate UI từ chính máy đang chạy Docker.
+  # Nếu mở UI từ máy/điện thoại khác trong LAN, thêm IP LAN của máy chạy Docker
+  # vào danh sách, vd: 192.168.1.100:8555
+  webrtc:
+    candidates:
+      - 127.0.0.1:8555
+      - stun:8555
+
+# ============================================================================
+# CAMERAS
+# ============================================================================
+cameras:
+  front_door:
+    enabled: true
+
+    ffmpeg:
+      # Pull từ go2rtc local thay vì từ cam → cam chỉ phải phục vụ go2rtc
+      input_args: preset-rtsp-restream
+      inputs:
+        - path: rtsp://127.0.0.1:8554/front_door
+          roles:
+            - record
+            - detect
+
+    detect:
+      width: 1280
+      height: 720
+      fps: 5
+
+    # Frigate tự link UI live view với go2rtc stream cùng tên camera (`front_door`).
+    # Không cần khai báo gì thêm.
+    live:
+      quality: 8                        # 1-31, càng thấp càng nét (cho fallback JSMPEG)
+
+    # Zone — comment để test mọi vị trí trong khung hình.
+    # Sau khi pipeline ổn, vẽ zone bằng UI (Settings → Mask & Zone Editor) rồi paste tọa độ vào đây.
+    # zones:
+    #   sidewalk:
+    #     coordinates: "0,720,0,400,1280,400,1280,720"
+    #     objects:
+    #       - person
+
+    review:
+      alerts:
+        labels:
+          - person
+        # required_zones:
+        #   - sidewalk
+
+# ============================================================================
+# Mẹo xem live mượt nhất trong UI:
+#   1. Mở http://localhost:5000/#front_door
+#   2. Click icon ⚙ trên live view → "Camera Settings"
+#   3. Streaming Mode → "Continuous Streaming"
+#   4. Stream → chọn "MSE" (mặc định ổn) hoặc "WebRTC" (mượt nhất)
+# ============================================================================

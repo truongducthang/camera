@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/Docker/**)",
+      "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\uninstall-docker.ps1`\"\")",
+      "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\install-docker.ps1`\"\")",
+      "PowerShell(Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"`\"$env:USERPROFILE\\\\Desktop\\\\install-wsl-msi.ps1`\"\")"
+    ]
+  }
+}
