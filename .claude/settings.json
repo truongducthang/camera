@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(MSYS_NO_PATHCONV=1 docker exec frigate sh -c 'top -bn1 -d 0.1 | head -40')",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec frigate sh -c 'ls -la /dev/shm/logs/ 2>/dev/null; find /dev/shm/logs -name \"*front_door*\" 2>/dev/null | head -10')",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec frigate sh -c 'cat /dev/shm/logs/frigate/current 2>/dev/null | tail -80')",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec frigate sh -c 'timeout 25 /usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -threads 2 -hwaccel_device 0 -hwaccel cuda -hwaccel_output_format cuda -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -timeout 5000000 -re -i \"rtsp://admin:QEDWIE@192.168.1.5:554/Streaming/Channels/101\" -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy /tmp/twoout_seg_%Y%m%d%H%M%S.mp4 -r 5 -vf fps=5,scale_cuda=w=1280:h=720,hwdownload,format=nv12,eq=gamma=1.4:gamma_weight=0.5 -threads 2 -f rawvideo -pix_fmt yuv420p pipe: 2>/dev/null | wc -c')",
+      "Bash(curl -s http://localhost:5000/api/stats)",
+      "Bash(python -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\('Cameras:'\\); [print\\(f'  {k}: fps={v.get\\(\\\\\"camera_fps\\\\\"\\)} detect_fps={v.get\\(\\\\\"detection_fps\\\\\"\\)} skipped={v.get\\(\\\\\"skipped_fps\\\\\"\\)} pid={v.get\\(\\\\\"pid\\\\\"\\)}'\\) for k,v in d.get\\('cameras',{}\\).items\\(\\)]; print\\('Service:', d.get\\('service',{}\\).get\\('storage'\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\('Cameras:'\\); [print\\(f'  {k}: fps={v.get\\(\\\\\"camera_fps\\\\\"\\)} detect_fps={v.get\\(\\\\\"detection_fps\\\\\"\\)} skipped={v.get\\(\\\\\"skipped_fps\\\\\"\\)} pid={v.get\\(\\\\\"pid\\\\\"\\)}'\\) for k,v in d.get\\('cameras',{}\\).items\\(\\)]\")",
+      "Bash(python -c ' *)",
+      "Bash(timeout 120 docker logs -f --since 5s frigate)",
+      "Bash(python -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); v=d['cameras']['front_door']; print\\(f'camera_fps={v.get\\(\\\\\"camera_fps\\\\\"\\)} detect_fps={v.get\\(\\\\\"detection_fps\\\\\"\\)} skipped={v.get\\(\\\\\"skipped_fps\\\\\"\\)} process_fps={v.get\\(\\\\\"process_fps\\\\\"\\)}'\\)\")"
+    ]
+  }
+}

@@ -13,13 +13,20 @@ services:
 
   # Frigate — NVR + AI detection
   frigate:
-    image: ghcr.io/blakeblackshear/frigate:stable
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
     container_name: frigate
     restart: unless-stopped
     depends_on:
       - mosquitto
     privileged: true            # Cần cho Coral USB; bỏ nếu chạy CPU detect
-    shm_size: 256mb             # Tăng nếu nhiều cam độ phân giải cao
+    shm_size: 1024mb            # Tăng cho cam mainstream 2K + GPU pipeline
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     # devices:
     #   - /dev/bus/usb:/dev/bus/usb     # Bỏ comment nếu có Google Coral USB
     #   - /dev/dri/renderD128           # Bỏ comment nếu dùng Intel QSV/VAAPI

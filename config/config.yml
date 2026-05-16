@@ -20,7 +20,10 @@ detectors:
 # FFMPEG — tham số chung cho mọi camera
 # ============================================================================
 ffmpeg:
-  # hwaccel_args: preset-vaapi          # Chỉ bật khi chạy trên Linux có Intel iGPU. Bỏ qua trên Windows/Docker Desktop.
+  # TẠM TẮT hwaccel để chẩn đoán: NVDEC trên Pascal (GTX 1060) đang silent-fail
+  # với HEVC từ Hikvision (PTS thất thường) → không có frame nào tới detect →
+  # watchdog kill ffmpeg sau 20s → loop "Restarting ffmpeg".
+  # hwaccel_args: preset-nvidia
   output_args:
     record: preset-record-generic-audio-copy
 
@@ -29,7 +32,7 @@ ffmpeg:
 # ============================================================================
 detect:
   enabled: true
-  fps: 5
+  fps: 2                                # Giảm để watchdog không kill khi camera_fps thực tế thấp
 
 objects:
   track:
@@ -96,18 +99,36 @@ cameras:
     enabled: true
 
     ffmpeg:
-      # Pull từ go2rtc local thay vì từ cam → cam chỉ phải phục vụ go2rtc
-      input_args: preset-rtsp-restream
+      # Camera Hikvision này gửi RTSP với DTS không monotonic
+      # (vd. "Non-monotonic DTS; previous: 1850602, current: 266432" — nhảy lùi 1.5M unit).
+      # Trước đó hwaccel preset-nvidia nuốt lỗi silently → 0 frame → watchdog kill →
+      # loop "Restarting ffmpeg". Khi tắt hwaccel mới lộ ra DTS hỏng là gốc rễ.
+      #
+      # `-use_wallclock_as_timestamps 1`: ffmpeg bỏ timestamp của camera, dùng giờ wallclock
+      #   khi nhận packet → luôn monotonic, segment muxer ghi mp4 không lỗi.
+      # `-fflags +genpts+discardcorrupt`: sinh PTS, vứt packet hỏng.
+      # `-rtsp_transport tcp`: cam Hikvision hay drop UDP, TCP ổn định hơn.
       inputs:
-        - path: rtsp://127.0.0.1:8554/front_door
+        - path: "{FRIGATE_CAM01_URL}"
+          input_args:
+            - -avoid_negative_ts
+            - make_zero
+            - -fflags
+            - +genpts+discardcorrupt
+            - -use_wallclock_as_timestamps
+            - "1"
+            - -rtsp_transport
+            - tcp
+            - -timeout
+            - "5000000"
           roles:
             - record
             - detect
 
     detect:
-      width: 1280
-      height: 720
-      fps: 5
+      width: 640                        # Giảm độ phân giải detect — pipe + CPU detector nhẹ hơn
+      height: 360
+      fps: 2
 
     # Frigate tự link UI live view với go2rtc stream cùng tên camera (`front_door`).
     # Không cần khai báo gì thêm.
